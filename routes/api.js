@@ -24,7 +24,7 @@ module.exports = function (app) {
       const created_by = req.body.created_by;
 
       if(!issue_title || !issue_text || !created_by){
-        return res.status(400).json({'error': 'required field(s) missing'});
+        return res.status(400).json({ error: 'required field(s) missing' });
       }
 
       const newIssue = {
