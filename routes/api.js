@@ -83,8 +83,6 @@ module.exports = function (app) {
       try{
         const db = await getDB();
         const issueRes = await db.collection(project).updateOne({_id: issueId}, {$set: updateData});
-        //const issueRes = await db.collection(project).find({_id: new ObjectId("67cd8f49dcf472ab031706ac")}).toArray();
-        console.log("response:",issueRes);
         if (issueRes.modifiedCount == 0) return res.json({ error: 'could not update', '_id': _id })
         
         return res.json({  result: 'successfully updated', '_id': _id })
@@ -98,11 +96,10 @@ module.exports = function (app) {
       const {_id} = req.body;
       if (!_id) return res.json({ error: 'missing _id' })
       const issueId = new ObjectId(_id);
-
       try {
         const db = await getDB();
-        const response = db.collection(project).delete({_id: issueId});
-        if (response.deletedCount == 0) return res.json({ error: 'could not delete', '_id': _id })
+        const deleteRes = await db.collection(project).deleteOne({_id: issueId});
+        if (deleteRes.deletedCount == 0) return res.json({ error: 'could not delete', '_id': _id })
         return res.json({ result: 'successfully deleted', '_id': _id })
       } catch(err){
         return res.json({ error: 'could not delete', '_id': _id });
