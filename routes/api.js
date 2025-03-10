@@ -42,7 +42,7 @@ module.exports = function (app) {
       const created_by = req.body.created_by;
       
       if(!issue_title || !issue_text || !created_by){
-        return res.json({ error: 'required field(s) missing' });
+        return res.status(200).json({ error: 'required field(s) missing' });
       };
       const newIssue = {
         assigned_to,
@@ -59,7 +59,7 @@ module.exports = function (app) {
         const result = await db.collection(project).insertOne(newIssue);
         return res.status(201).json({_id:result.insertedId,...newIssue});
       } catch(err){
-        res.status(500).json({ error: 'required field(s) missing' });
+        res.status(200).json({ error: 'required field(s) missing' });
       }
     })
     
@@ -68,7 +68,7 @@ module.exports = function (app) {
       const { _id, issue_title, issue_text, created_by, assigned_to, status_text, open } = req.body;
       const updateData = {}
 
-      if(!_id) return res.json({ error: 'missing _id' });
+      if(!_id) return res.status(200).json({ error: 'missing _id' });
 
       const issueId = new ObjectId(_id);
       if (issue_title) updateData["issue_title"] = { $regex: issue_title, $options: "i"} 
@@ -79,30 +79,30 @@ module.exports = function (app) {
       if (open) updateData["open"] = JSON.parse(open);
       updateData["updated_on"] = new Date();
 
-      if(Object.keys(updateData).length === 1) return res.json({ error: 'no update field(s) sent', '_id': _id })
+      if(Object.keys(updateData).length === 1) return res.status(200).json({ error: 'no update field(s) sent', '_id': _id })
       try{
         const db = await getDB();
         const issueRes = await db.collection(project).updateOne({_id: issueId}, {$set: updateData});
-        if (issueRes.modifiedCount == 0) return res.json({ error: 'could not update', '_id': _id })
+        if (issueRes.modifiedCount == 0) return res.status(200).json({ error: 'could not update', '_id': _id })
         
-        return res.json({  result: 'successfully updated', '_id': _id })
+        return res.status(201).json({  result: 'successfully updated', '_id': _id })
       } catch(err){
-        return res.json({ error: 'could not update', '_id': _id });
+        return res.status(200).json({ error: 'could not update', '_id': _id });
       }
     })
     
     .delete(async function (req, res){
       let project = req.params.project;
       const {_id} = req.body;
-      if (!_id) return res.json({ error: 'missing _id' })
+      if (!_id) return res.status(201).json({ error: 'missing _id' })
       const issueId = new ObjectId(_id);
       try {
         const db = await getDB();
         const deleteRes = await db.collection(project).deleteOne({_id: issueId});
-        if (deleteRes.deletedCount == 0) return res.json({ error: 'could not delete', '_id': _id })
-        return res.json({ result: 'successfully deleted', '_id': _id })
+        if (deleteRes.deletedCount == 0) return res.status(201).json({ error: 'could not delete', '_id': _id })
+        return res.status(200).json({ result: 'successfully deleted', '_id': _id })
       } catch(err){
-        return res.json({ error: 'could not delete', '_id': _id });
+        return res.status(201).json({ error: 'could not delete', '_id': _id });
       }
     });
     
