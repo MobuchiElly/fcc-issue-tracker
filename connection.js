@@ -19,11 +19,13 @@ async function connectDB() {
     }
 }
 
-function getDB() {
-    if (!db) {
-        throw new Error('Database not connected');
+async function getDB(retries = 5, delay = 1000) {
+    for (let i = 0; i < retries; i++) {
+        if (db) return db;
+        console.log(`Database not connected. Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
     }
-    return db;
+    throw new Error('Database not connected after multiple attempts');
 }
 
 module.exports = { connectDB, getDB };

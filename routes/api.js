@@ -25,7 +25,7 @@ module.exports = function (app) {
       try {
         const db = await getDB();
         const issuesRes = await db.collection(project).find(filterObj).toArray();
-        if(!issuesRes.length) return res.status(404).json("No issues in database");
+        if(issuesRes.length == 0) return res.status(404).json("No issues in database");
         return res.status(200).json(issuesRes);
       } catch(err){
         res.status(500).json("server error");
@@ -35,18 +35,15 @@ module.exports = function (app) {
     .post(async function (req, res){
       let project = req.params.project;
 
-      const issue_title = req.body.issue_title;
-      const issue_text = req.body.issue_text;
-      const assigned_to = req.body.assigned_to || '';
-      const status_text = req.body.status_text || '';
-      const created_by = req.body.created_by;
+      const { issue_title, issue_text, created_by, assigned_to, status_text } = req.body;
       
       if(!issue_title || !issue_text || !created_by){
         return res.status(200).json({ error: 'required field(s) missing' });
       };
+
       const newIssue = {
-        assigned_to,
-        status_text,
+        assigned_to: assigned_to ? assigned_to : '',
+        status_text: status_text ? status_text : '',
         "open":true,
         issue_title,
         issue_text,
@@ -55,7 +52,7 @@ module.exports = function (app) {
         "updated_on": new Date()
       };
       try{
-        const db = getDB();
+        const db = await getDB();
         const result = await db.collection(project).insertOne(newIssue);
         return res.status(201).json({_id:result.insertedId,...newIssue});
       } catch(err){
@@ -67,7 +64,6 @@ module.exports = function (app) {
       let project = req.params.project;
       const { _id, issue_title, issue_text, created_by, assigned_to, status_text, open } = req.body;
       const updateData = {}
-
       if(!_id) return res.status(200).json({ error: 'missing _id' });
 
       const issueId = new ObjectId(_id);

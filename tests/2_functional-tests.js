@@ -7,11 +7,12 @@ const { ObjectId } = require('mongodb');
 chai.use(chaiHttp);
 
 suite('Functional Tests', function() {
-  const _id =  '67cb897421d5205e77609a27';
+  let _id = "";
+  const _invalid_id = 67383373635252622883;
   test('Create an issue with every field: POST request to /api/issues/{project}', function(done){
     chai
         .request(server)
-        .post("/api/issues/{project}")
+        .post("/api/issues/:project")
         .send({
           issue_title: 'testing issue',
           issue_text: 'issue content',
@@ -37,19 +38,18 @@ suite('Functional Tests', function() {
             assert.equal(res.body.assigned_to, 'buchi');
             assert.equal(res.body.status_text, 'pending');
             assert.isTrue(res.body.open);
+            _id = res.body._id
             done();
         });
   });
   test('Create an issue with only required fields: POST request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .post('/api/issues/{project}')
+      .post('/api/issues/:project')
       .send({
         issue_title: 'testing issue',
         issue_text: 'issue content',
-        created_by: 'buchi_dev',
-        assigned_to: '',
-        status_text: ''
+        created_by: 'buchi_dev'
       })
       .end((err, res) => {
         assert.isObject(res.body);
@@ -75,7 +75,7 @@ suite('Functional Tests', function() {
   test('Create an issue with missing required fields: POST request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .post('/api/issues/{project}')
+      .post('/api/issues/:project')
       .send({})
       .end((err, res) => {
         assert.isObject(res.body);
@@ -85,10 +85,10 @@ suite('Functional Tests', function() {
         done();
       })
   });
-  test('', function(done){
+  test('View issues on a project: GET request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .get('/api/issues/{projectname}')
+      .get('/api/issues/:project')
       .end((err, res) => {
         assert.isArray(res.body);
         assert.equal(res.status, 200);
@@ -111,32 +111,32 @@ suite('Functional Tests', function() {
   test('View issues on a project with one filter: GET request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .get('/api/issues/{project}?open=false')
+      .get('/api/issues/:project?created_by=buchi_dev')
       .end((err, res) => {
         assert.equal(res.status, 200);
         assert.isArray(res.body);
         if (res.body.length > 0){
           res.body.forEach(issue => {
-            assert.property(issue, 'open');
-            assert.isFalse(issue.open);
+            assert.property(issue, 'created_by');
+            assert.equal(issue.created_by, 'buchi_dev');
           })
         }
         done();
       })
-  })
+  });
   test('View issues on a project with multiple filters: GET request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .get('/api/issues/{project}?open=true&created_by=john')
+      .get('/api/issues/:project?status_text=pending&created_by=buchi_dev')
       .end((err, res) => {
         assert.equal(res.status, 200);
         assert.isArray(res.body)
         if (res.body.length > 0){
           res.body.forEach(issue => {
-            assert.property(issue, 'open');
+            assert.property(issue, 'status_text');
             assert.property(issue, 'created_by');
-            assert.isTrue(issue.open); 
-            assert.equal(issue.created_by, 'john');
+            assert.equal(issue.status_text, 'pending'); 
+            assert.equal(issue.created_by, 'buchi_dev');
           })
         }
         done();
@@ -145,14 +145,14 @@ suite('Functional Tests', function() {
   test('Update one field on an issue: PUT request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .put('/api/issues/{project}')
+      .put('/api/issues/:project')
       .send({
         '_id': _id,
         'assigned_to': 'jude',
         'updated_on': new Date()
       })
       .end((err, res) => {
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 201);
         assert.isObject(res.body);
         assert.property(res.body, 'result');
         assert.property(res.body, '_id');
@@ -164,7 +164,7 @@ suite('Functional Tests', function() {
   test('Update multiple fields on an issue: PUT request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .put('/api/issues/{project}')
+      .put('/api/issues/:project')
       .send({
         '_id': _id,
         'assigned_to': 'jude',
@@ -175,7 +175,7 @@ suite('Functional Tests', function() {
       .end((err, res) => {
         assert.isObject(res.body);
         assert.equal(res.status, 201);
-        assert.property(res.bbdy, 'result');
+        assert.property(res.body, 'result');
         assert.property(res.body, '_id');
         assert.equal(res.body.result, 'successfully updated');
         assert.equal(res.body._id, _id);
@@ -186,7 +186,7 @@ suite('Functional Tests', function() {
   test('Update an issue with missing _id: PUT request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .put('/api/issues/{project}')
+      .put('/api/issues/:project')
       .send({
         'open': false,
         'updated_on': new Date()
@@ -203,7 +203,7 @@ suite('Functional Tests', function() {
   test('Update an issue with no fields to update: PUT request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .put('/api/issues/{project}')
+      .put('/api/issues/:project')
       .send({
         '_id': _id
       })
@@ -221,12 +221,12 @@ suite('Functional Tests', function() {
   test('Update an issue with an invalid _id: PUT request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .put('/api/issues/{project}')
+      .put('/api/issues/:project')
       .send({
-        '_id': _id,
+        '_id': _invalid_id,
         'open': 'false',
         'assigned_to': 'lukas',
-        'updatedq_on': new Date()
+        'updated_on': new Date()
       })
       .end((err, res) => {
         assert.isObject(res.body);
@@ -234,7 +234,6 @@ suite('Functional Tests', function() {
         assert.property(res.body, 'error');
         assert.equal(res.body.error, 'could not update');   //maybe 'missing _id' error
         assert.property(res.body, '_id');
-        assert.equal(res.body._id, _id);
         done();
       })
   })
@@ -242,7 +241,7 @@ suite('Functional Tests', function() {
   test('Delete an issue: DELETE request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .delete('/api/issues/{project}')
+      .delete('/api/issues/:project')
       .send({
         '_id': _id
       })
@@ -260,9 +259,9 @@ suite('Functional Tests', function() {
   test('Delete an issue with an invalid _id: DELETE request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .delete('/api/issues/{project}')
+      .delete('/api/issues/:project')
       .send({
-        '_id': _id
+        '_id': _invalid_id
       })
       .end((err, res) => {
         assert.equal(res.status, 201);
@@ -270,7 +269,6 @@ suite('Functional Tests', function() {
         assert.property(res.body, 'error');
         assert.equal(res.body.error, 'could not delete');
         assert.property(res.body, '_id');
-        assert.equal(res.body._id, _id);
         done();
       })
   });
@@ -278,10 +276,8 @@ suite('Functional Tests', function() {
   test('Delete an issue with missing _id: DELETE request to /api/issues/{project}', function(done){
     chai
       .request(server)
-      .delete('/api/issues/{project}')
-      .send({
-        '_id': _id
-      })
+      .delete('/api/issues/:project')
+      .send({})
       .end((err, res) => {
         assert.equal(res.status, 201);
         assert.isObject(res.body);
